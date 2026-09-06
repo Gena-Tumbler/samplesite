@@ -20,6 +20,6 @@ from django.urls import path
 from bboard.views import index
 
 urlpatterns = [
-    path('bboard/', index),
+    path('bboard/', include('bboard.urls')),
     path('admin/', admin.site.urls),
 ]
