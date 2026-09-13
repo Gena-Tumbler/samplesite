@@ -4,6 +4,7 @@
 {% for bb in bbs %}
 <div>
     <h2>{{ bb.title }}</h2>
+    <p>{{ bb.get_kind_display }}</p>
     <p>{{ bb.content }}</p>
     <p><a href="{% url 'by_rubric' bb.rubric.pk %}">{{ bb.rubric.name }}</a></p>
     <p>{{ bb.published|date:"d.m.Y H:i:s" }}</p>

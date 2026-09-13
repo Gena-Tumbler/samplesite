@@ -7,6 +7,12 @@ class Bb(models.Model):
     published = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name='Опубликовано')
     rubric = models.ForeignKey('Rubric', null=True, on_delete=models.PROTECT, verbose_name='Рубрика', help_text='Рубрика')
     is_active = models.BooleanField(default=True)
+    class Kinds(models.IntegerChoices):
+        BUY = 1, 'Куплю'
+        SELL = 2, 'Продам'
+        EXCHANGE = 3, 'Обменяю'
+        RENT = 4
+    kind = models.SmallIntegerField(choices=Kinds.choices, default=Kinds.SELL)
 
     class Meta:
         verbose_name_plural = 'Объявления'
@@ -23,4 +29,5 @@ class Rubric(models.Model):
         verbose_name_plural = 'Рубрики'
         verbose_name = 'Рубрика'
         ordering = ['name']
+
 
