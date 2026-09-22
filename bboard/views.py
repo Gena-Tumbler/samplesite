@@ -1,15 +1,30 @@
 from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseRedirect
-from django.urls import reverse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.urls import reverse, reverse_lazy
+from django.views.generic.detail import DetailView
 
+
+from django.template.loader import get_template, render_to_string
+from django.template.response import TemplateResponse
 from .forms import BbForm
 from .models import Bb, Rubric
 
+"""
+class BbDetailView(DetailView):
+    model = Bb
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['rubrics'] = Rubric.objects.all()
+        return context 
+"""
+
 def index(request):
-    bbs = Bb.objects.filter(is_active=True)
+    bbs = Bb.objects.all()
     rubrics = Rubric.objects.all()
     context = {'bbs': bbs, 'rubrics': rubrics}
-    return render(request, 'bboard/index.html', context)
+    return TemplateResponse(request, 'bboard/index.html', context=context)
+
 
 def by_rubric(request, rubric_id):
     bbs = Bb.objects.filter(rubric=rubric_id, is_active=True)
@@ -17,6 +32,7 @@ def by_rubric(request, rubric_id):
     current_rubric = Rubric.objects.get(pk=rubric_id)
     context = {'bbs': bbs, 'rubrics': rubrics, 'current_rubric': current_rubric}
     return render(request, 'bboard/by_rubric.html', context)
+
 
 def add_and_save(request):
     if request.method == 'POST':
