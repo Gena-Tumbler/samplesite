@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.urls import reverse
 
 class Bb(models.Model):
     title = models.CharField(max_length=50, verbose_name="Товар", help_text='Название')
@@ -25,6 +26,9 @@ class Rubric(models.Model):
     name = models.CharField(max_length=20, db_index=True, verbose_name='Название')
     def __str__(self):
         return self.name
+    def get_absolute_url(self):
+        return reverse('bboard:by_rubric', kwargs={'rubric_id': self.pk})
+
 
     class Meta:
         verbose_name_plural = 'Рубрики'

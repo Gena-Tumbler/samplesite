@@ -2,7 +2,7 @@ from django.urls import path
 from django.views.generic import CreateView
 from .models import Bb
 
-from .views import BbAddView, BbEditView, BbByRubricView, BbDeleteView, BbIndexView #by_rubric, add_and_save,index,
+from .views import BbAddView, BbEditView, BbByRubricView, BbDeleteView, index, BbDetailView, BbRedirectView #by_rubric, add_and_save,index,BbIndexView
 app_name = 'bboard'
 
 
@@ -12,8 +12,9 @@ urlpatterns = [
     path('delete/<int:pk>/', BbDeleteView.as_view(), name='delete'),
     #path('add/', add_and_save, name='add'),
     path('<int:rubric_id>/', BbByRubricView.as_view(), name='by_rubric'),
-    #path('detail/<int:pk>/', BbDetailView.as_view(), name='detail'),
+    path('detail/<int:pk>/', BbDetailView.as_view(), name='detail'),
+    path('detail/<int:year>/<int:month>/<int:day>/<int:pk>/', BbRedirectView.as_view(), name='old_detail'),
     #path('<int:rubric_id>/', by_rubric, name='by_rubric'),
-    path('', BbIndexView.as_view(), name='index'),
-    #path('', index, name='index'),
+    #path('', BbIndexView.as_view(), name='index'),
+    path('', index, name='index'),
 ]

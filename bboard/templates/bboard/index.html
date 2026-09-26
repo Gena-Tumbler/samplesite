@@ -9,7 +9,11 @@
 
 {% for bb in bbs %}
 <div>
-    <h2>{{ bb.title }}</h2>
+    <h2>
+        <a href="{% url 'bboard:old_detail' bb.published.year bb.published.month bb.published.day bb.pk %}">
+            {{ bb.title }}
+        </a>
+    </h2>
     <p>{{ bb.get_kind_display }}</p>
     <p>{{ bb.content }}</p>
     <p><a href="{% url 'bboard:edit' bb.pk %}">Исправить</a></p>
@@ -17,7 +21,20 @@
     <p>Цена: {{ bb.price }}</p>
     <p><a href="{% url 'bboard:by_rubric' bb.rubric.pk %}">{{ bb.rubric.name }}</a></p>
     <p>{{ bb.published|date:"d.m.Y H:i:s" }}</p>
+    <p>{{ bb.published|date:"d.E.y l U" }}</p>
+    <p>Probe{{ bb.rubric.get_absolute_url }}</p>
 </div>
 {% endfor %}
+<div class="pagination">
+    {% if page.has_previous %}
+    <a href="?page={{ page.previous_page_number }}">&lt;</a>
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    {% endif %}
+    Часть №{{ page.number }} из {{ page.paginator.num_pages }}
+    {% if page.has_next %}
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    <a href="?page={{ page.next_page_number }}">&gt</a>
+    {% endif %}
+</div>
 {% endblock %}
 
