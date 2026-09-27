@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.urls import reverse, reverse_lazy
 from django.views.generic.detail import DetailView, SingleObjectMixin
@@ -7,6 +7,7 @@ from django.views.generic.edit import FormView, UpdateView, DeleteView
 from django.views.generic.dates import ArchiveIndexView, DateDetailView
 from django.views.generic.base import RedirectView
 from django.core.paginator import Paginator
+from django.forms import modelformset_factory
 
 
 from django.template.loader import get_template, render_to_string
@@ -78,6 +79,22 @@ class BbByRubricView(SingleObjectMixin, ListView):
 
     def get_queryset(self):
         return self.object.bb_set.all()
+
+def rubrics(request):
+    RubricFormSet = modelformset_factory(Rubric, fields=('name',), can_order=True, can_delete=True)
+    if request.method == "POST":
+        formset = RubricFormSet(request.POST)
+        if formset.is_valid():
+            for form in formset:
+                if form.cleaned_data:
+                    rubric = form.save(commit=False)
+                    rubric.order = form.cleaned_data[ORDERING_FIELD_NAME]
+                    rubric.save()
+            return redirect('bboard:index')
+    else:
+        formset = RubricFormSet()
+    context = {'formset': formset}
+    return render(request, 'bboard/rubrics.html', context)
 
 
 class BbAddView(FormView):
