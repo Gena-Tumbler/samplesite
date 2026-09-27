@@ -4,6 +4,7 @@
 
 {% block content %}
 <h2>Рубрика: {{ current_rubric.name }}</h2>
+<p><a href="{% url 'bboard:manage_bbs' current_rubric.pk %}">Редактировать объявления</a></p>
 {% for bb in bbs %}
 <div>
     <h2>{{ bb.title }}</h2>

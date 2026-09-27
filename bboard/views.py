@@ -7,12 +7,15 @@ from django.views.generic.edit import FormView, UpdateView, DeleteView
 from django.views.generic.dates import ArchiveIndexView, DateDetailView
 from django.views.generic.base import RedirectView
 from django.core.paginator import Paginator
-from django.forms import modelformset_factory
+from django.forms import modelformset_factory, inlineformset_factory
+from django.forms.models import BaseModelFormSet
+from django.core.exceptions import ValidationError
+from django.forms.formsets import ORDERING_FIELD_NAME
 
 
 from django.template.loader import get_template, render_to_string
 from django.template.response import TemplateResponse
-from .forms import BbForm
+from .forms import BbForm, RubricFormSet
 from .models import Bb, Rubric
 
 
@@ -80,6 +83,14 @@ class BbByRubricView(SingleObjectMixin, ListView):
     def get_queryset(self):
         return self.object.bb_set.all()
 
+
+class RubricBaseFormSet(BaseModelFormSet):
+    def clean(self):
+        super().clean()
+        names = [form.cleaned_data['name'] for form in self.forms if 'name' in form.cleaned_data]
+        if ('Недвижимость' not in names) or ('Транспорт' not in names) or ('Мебель' not in names):
+            raise ValidationError('Добавьте рубрики недвижимости, транспорта и мебели')
+
 def rubrics(request):
     RubricFormSet = modelformset_factory(Rubric, fields=('name',), can_order=True, can_delete=True)
     if request.method == "POST":
@@ -96,6 +107,18 @@ def rubrics(request):
     context = {'formset': formset}
     return render(request, 'bboard/rubrics.html', context)
 
+def bbs(request, rubric_id):
+    BbsFormSet = inlineformset_factory(Rubric, Bb, form=BbForm, extra=1)
+    rubric = Rubric.objects.get(pk=rubric_id)
+    if request.method == "POST":
+        formset = BbsFormSet(request.POST, instance=rubric)
+        if formset.is_valid():
+            formset.save()
+            return redirect('bboard:index')
+    else:
+        formset = BbsFormSet(instance=rubric)
+    context = {'formset': formset, 'current_rubric': rubric}
+    return render(request, 'bboard/bbs.html', context)
 
 class BbAddView(FormView):
     template_name = 'bboard/create.html'
