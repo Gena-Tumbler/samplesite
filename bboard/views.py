@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, HttpResponseForbidden
 from django.urls import reverse, reverse_lazy
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.list import ListView
@@ -11,6 +11,9 @@ from django.forms import modelformset_factory, inlineformset_factory
 from django.forms.models import BaseModelFormSet
 from django.core.exceptions import ValidationError
 from django.forms.formsets import ORDERING_FIELD_NAME
+from django.contrib.auth.views import redirect_to_login
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import UserPassesTestMixin
 
 
 from django.template.loader import get_template, render_to_string
@@ -38,16 +41,20 @@ class BbRedirectView(RedirectView):
 
 
 def index(request):
-    bbs = Bb.objects.all()
-    rubrics = Rubric.objects.all()
-    paginator = Paginator(bbs, 2)
-    if 'page' in request.GET:
-        page_num = request.GET['page']
+    if request.user.is_authenticated:
+
+        bbs = Bb.objects.all()
+        rubrics = Rubric.objects.all()
+        paginator = Paginator(bbs, 2)
+        if 'page' in request.GET:
+            page_num = request.GET['page']
+        else:
+            page_num = 1
+        page = paginator.get_page(page_num)
+        context = {'rubrics': rubrics, 'page': page, 'bbs': page.object_list}
+        return render(request, 'bboard/index.html', context)
     else:
-        page_num = 1
-    page = paginator.get_page(page_num)
-    context = {'rubrics': rubrics, 'page': page, 'bbs': page.object_list}
-    return render(request, 'bboard/index.html', context)
+        return render(request, 'bboard/index.html')
 """
 
 class BbIndexView(ArchiveIndexView):
@@ -91,21 +98,34 @@ class RubricBaseFormSet(BaseModelFormSet):
         if ('Недвижимость' not in names) or ('Транспорт' not in names) or ('Мебель' not in names):
             raise ValidationError('Добавьте рубрики недвижимости, транспорта и мебели')
 
+@login_required
 def rubrics(request):
-    RubricFormSet = modelformset_factory(Rubric, fields=('name',), can_order=True, can_delete=True)
-    if request.method == "POST":
-        formset = RubricFormSet(request.POST)
-        if formset.is_valid():
-            for form in formset:
-                if form.cleaned_data:
-                    rubric = form.save(commit=False)
-                    rubric.order = form.cleaned_data[ORDERING_FIELD_NAME]
-                    rubric.save()
-            return redirect('bboard:index')
+    if request.user.is_authenticated:
+        if request.user.has_perms(('bboard.add_rubric', 'bboard.change_rubric', 'bboard.delete_rubric')):
+            RubricFormSet = modelformset_factory(Rubric, fields=('name',), can_order=True, can_delete=True)
+            if request.method == "POST":
+                formset = RubricFormSet(request.POST)
+                if formset.is_valid():
+                    for form in formset:
+                        if form.cleaned_data:
+                            rubric = form.save(commit=False)
+                            rubric.order = form.cleaned_data[ORDERING_FIELD_NAME]
+                            rubric.save()
+                    return redirect('bboard:index')
+            else:
+                formset = RubricFormSet()
+            context = {'formset': formset}
+            return render(request, 'bboard/rubrics.html', context)
+        else:
+            return redirect('login')
     else:
-        formset = RubricFormSet()
-    context = {'formset': formset}
-    return render(request, 'bboard/rubrics.html', context)
+        return redirect_to_login(reverse('bboard:rubrics'))
+
+@login_required
+def profile(request):
+    user = request.user
+    return render(request, 'registration/profile.html', {'user': user})
+
 
 def bbs(request, rubric_id):
     BbsFormSet = inlineformset_factory(Rubric, Bb, form=BbForm, extra=1)
@@ -120,10 +140,13 @@ def bbs(request, rubric_id):
     context = {'formset': formset, 'current_rubric': rubric}
     return render(request, 'bboard/bbs.html', context)
 
-class BbAddView(FormView):
+class BbAddView(UserPassesTestMixin, FormView):
     template_name = 'bboard/create.html'
     form_class = BbForm
     initial = {'price': 0.0}
+
+    def test_func(self):
+        return self.request.user.is_staff
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
@@ -140,6 +163,8 @@ class BbAddView(FormView):
 
     def get_success_url(self):
         return reverse('bboard:by_rubric', kwargs={'rubric_id': self.object.cleaned_data['rubric'].pk})
+
+
 
 
 class BbEditView(UpdateView):

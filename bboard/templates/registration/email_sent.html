@@ -1,0 +1,10 @@
+{% extends "layout/basic.html" %}
+
+{% block title %}Письмо отправлено{% endblock %}
+
+{% block content %}
+<h2>Письмо отправлено</h2>
+<p>Мы отправили ссылку на Ваш email</p>
+<p>Если письмо не пришло, проверьте "папку Спам"</p>
+<a href="{% url 'bboard:index' %}">На главную</a>
+{% endblock %}
